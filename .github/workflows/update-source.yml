@@ -1,8 +1,6 @@
 name: Update AltStore Source
 
 on:
-  schedule:
-    - cron: '0 0 * * *'    # once a day, at midnight UTC — adjust the hour as you like
   workflow_dispatch: {}      # lets you trigger it manually from the Actions tab
 
 permissions:
