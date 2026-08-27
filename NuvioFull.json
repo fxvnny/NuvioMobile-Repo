@@ -54,6 +54,12 @@
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/58/a8/1b/58a81be9-4f54-f1fa-1b27-70f1b7835e92/03-trakt-sync-1284x2778.png/1284x2788bb.webp",
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/6c/a5/8c/6ca58c13-85cd-1590-3196-a72c8e4ed127/02-resume-progress-1284x2778.png/1284x2788bb.webp"
       ],
+      "version": "0.4.11",
+      "versionDate": "2026-08-26",
+      "versionDescription": "Bug Fixes and Improvements\nFor full release note Visit GitHub"
+      "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.11/nuvio-0.4.11-full-release.ipa",
+      "size": 51638510,
+      "minOSVersion": "16.1",
       "versions": [
         {
           "version": "0.4.11",
