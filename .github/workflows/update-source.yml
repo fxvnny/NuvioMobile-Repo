@@ -1,0 +1,188 @@
+name: Update AltStore Source
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # check every 6 hours — adjust as you like
+  workflow_dispatch: {}      # lets you trigger it manually from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repo (the AltStore source repo)
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Fetch latest release, verify the .ipa, and update the source
+        id: update
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_REPO: NuvioMedia/NuvioMobile      # repo whose Releases you're watching
+          SOURCE_FILE: NuvioiOS.json                 # file this workflow edits
+          BUNDLE_ID: com.nuvio.media                 # expected CFBundleIdentifier — mismatch just prints a warning
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import io
+          import json
+          import os
+          import plistlib
+          import sys
+          import urllib.request
+          import zipfile
+
+          repo = os.environ["RELEASE_REPO"]
+          token = os.environ.get("GITHUB_TOKEN")
+          source_file = os.environ["SOURCE_FILE"]
+          expected_bundle_id = os.environ["BUNDLE_ID"]
+
+          def gh_get(url):
+              req = urllib.request.Request(
+                  url,
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "User-Agent": "altstore-source-updater",
+                      **({"Authorization": f"Bearer {token}"} if token else {}),
+                  },
+              )
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  return json.load(r)
+
+          # 1. Find the latest release + its .ipa asset
+          release = gh_get(f"https://api.github.com/repos/{repo}/releases/latest")
+          tag = release["tag_name"].lstrip("v")
+          published = release["published_at"]  # ISO 8601
+
+          ipa_asset = next(
+              (a for a in release["assets"] if a["name"].lower().endswith(".ipa")),
+              None,
+          )
+          if not ipa_asset:
+              print("No .ipa asset found on the latest release — nothing to do.")
+              sys.exit(0)
+
+          download_url = ipa_asset["browser_download_url"]
+          notes = (release.get("body") or "See GitHub release notes.").strip()
+
+          # 2. Download the .ipa fully (needed for sha256 + Info.plist parsing)
+          print(f"Downloading {download_url} ...")
+          dl_req = urllib.request.Request(
+              download_url,
+              headers={"User-Agent": "altstore-source-updater"},
+          )
+          with urllib.request.urlopen(dl_req, timeout=180) as r:
+              ipa_bytes = r.read()
+
+          size = len(ipa_bytes)
+          sha256 = hashlib.sha256(ipa_bytes).hexdigest()
+          print(f"Downloaded {size} bytes, sha256={sha256}")
+
+          # 3. Pull real metadata out of Payload/*.app/Info.plist
+          version = tag
+          build_version = None
+          min_os_version = None
+          plist_name = None
+          try:
+              with zipfile.ZipFile(io.BytesIO(ipa_bytes)) as z:
+                  plist_name = next(
+                      (
+                          n for n in z.namelist()
+                          if n.startswith("Payload/") and n.endswith(".app/Info.plist")
+                          and n.count("/") == 2  # main app's Info.plist, not a nested framework/appex
+                      ),
+                      None,
+                  )
+                  if plist_name:
+                      with z.open(plist_name) as f:
+                          plist = plistlib.load(f)
+                      version = str(plist.get("CFBundleShortVersionString", tag))
+                      build_version = str(plist.get("CFBundleVersion", ""))
+                      min_os_version = str(plist.get("MinimumOSVersion", ""))
+                      bundle_id = plist.get("CFBundleIdentifier", "")
+                      if bundle_id and bundle_id != expected_bundle_id:
+                          print(f"WARNING: Info.plist bundle id '{bundle_id}' does not match "
+                                f"BUNDLE_ID '{expected_bundle_id}' - check for a mismatch.")
+                  else:
+                      print("WARNING: Could not find the main app's Info.plist inside the .ipa - "
+                            "falling back to the GitHub release tag for version info.")
+          except Exception as e:
+              print(f"WARNING: Failed to parse Info.plist ({e}) - falling back to the GitHub release tag.")
+
+          # 4. Load the existing source file
+          with open(source_file, "r", encoding="utf-8") as f:
+              source = json.load(f)
+
+          app = source["apps"][0]
+          versions = app.setdefault("versions", [])
+
+          already_present = any(
+              v.get("version") == version and v.get("buildVersion") == build_version
+              for v in versions
+          )
+          if already_present:
+              print(f"Version {version} (build {build_version}) is already in the source - nothing to do.")
+              sys.exit(0)
+
+          new_version = {
+              "version": version,
+              "buildVersion": build_version or "",
+              "date": published,
+              "localizedDescription": notes[:1000],
+              "downloadURL": download_url,
+              "size": size,
+              "sha256": sha256,
+          }
+          # Only set minOSVersion if we actually recovered one - never overwrite a
+          # good manual value with an empty string.
+          if min_os_version:
+              new_version["minOSVersion"] = min_os_version
+          elif versions:
+              new_version["minOSVersion"] = versions[0].get("minOSVersion", "")
+
+          # AltStore treats the FIRST entry in "versions" as the latest release
+          versions.insert(0, new_version)
+          app["versions"] = versions
+
+          # 5. Mirror the newest version into legacy flat fields on the app object.
+          # AltStore Classic and forks like Feather read these instead of (or in
+          # addition to) the "versions" array - without this, they show a stale
+          # version and no size badge even though "versions" is correct.
+          app["version"] = new_version["version"]
+          app["versionDate"] = published[:10]  # YYYY-MM-DD
+          # versionDescription is intentionally left untouched — not mirrored
+          app["downloadURL"] = new_version["downloadURL"]
+          app["size"] = new_version["size"]
+          if "minOSVersion" in new_version:
+              app["minOSVersion"] = new_version["minOSVersion"]
+
+          # NOTE: appPermissions / permissions are NOT touched here - entitlements
+          # and privacy-usage strings need a human to review against Info.plist,
+          # since a wrong auto-fill could make AltStore silently under-report them.
+
+          with open(source_file, "w", encoding="utf-8") as f:
+              json.dump(source, f, indent=2, ensure_ascii=False)
+              f.write("\n")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as gh_out:
+              gh_out.write("changed=true\n")
+              gh_out.write(f"version={version}\n")
+              gh_out.write(f"build={build_version or ''}\n")
+          PY
+
+      - name: Commit & push updated source
+        if: steps.update.outputs.changed == 'true'
+        env:
+          SOURCE_FILE: NuvioiOS.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$SOURCE_FILE"
+          git commit -m "chore: update source to v${{ steps.update.outputs.version }} (build ${{ steps.update.outputs.build }})"
+          git push
