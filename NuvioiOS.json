@@ -1,7 +1,7 @@
 {
   "identifier": "com.nuviomedia.nuviomobile",
   "name": "Nuvio iOS (Unofficial Source)",
-  "subtitle": "Unofficial AltStore repository for official full Nuvio iOS builds.",
+  "subtitle": "Unofficial AltStore-compatible repository for official full Nuvio iOS builds.",
   "description": "Unofficial AltStore-compatible repository for official Nuvio iOS builds. Links are updated automatically with each official GitHub releases. Compatible with AltStore, SideStore, Feather, KSign, ESign, and more.",
   "website": "https://nuvio.tv/",
   "iconURL": "https://raw.githubusercontent.com/NuvioMedia/NuvioMobile/refs/heads/cmp-rewrite/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/app-icon-1024.png",
