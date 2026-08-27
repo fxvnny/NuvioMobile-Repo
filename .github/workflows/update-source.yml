@@ -144,7 +144,7 @@ jobs:
           app["versions"] = versions
 
           app["version"] = new_version["version"]
-          app["versionDate"] = published[:10]  # YYYY-MM-DD
+          app["versionDate"] = published[:10]
           app["downloadURL"] = new_version["downloadURL"]
           app["size"] = new_version["size"]
           if "minOSVersion" in new_version:
