@@ -57,7 +57,7 @@ jobs:
 
           release = gh_get(f"https://api.github.com/repos/{repo}/releases/latest")
           tag = release["tag_name"].lstrip("v")
-          published = release["published_at"]  # ISO 8601
+          published = release["published_at"]
 
           ipa_asset = next(
               (a for a in release["assets"] if a["name"].lower().endswith(".ipa")),
@@ -92,7 +92,7 @@ jobs:
                       (
                           n for n in z.namelist()
                           if n.startswith("Payload/") and n.endswith(".app/Info.plist")
-                          and n.count("/") == 2  # main app's Info.plist, not a nested framework/appex
+                          and n.count("/") == 2
                       ),
                       None,
                   )
