@@ -1,0 +1,72 @@
+{
+  "name": "Nuvio iOS (Unofficial AltStore Source)",
+  "subtitle": "Unofficial AltStore repository for official full Nuvio iOS builds.",
+  "description": "Unofficial AltStore-compatible repository for official Nuvio iOS builds. Links will be updated regularly each official GitHub releases. You can install Nuvio on eligible app updater (AltStore/Feather/KSign/ESign), etc.",
+  "website": "https://github.com/NuvioMedia/NuvioMobile",
+  "iconURL": "https://raw.githubusercontent.com/NuvioMedia/NuvioMobile/refs/heads/cmp-rewrite/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/app-icon-1024.png",
+  "tintColor": "#7B2FF7",
+  "nsfw": false,
+  "apps": [
+    {
+      "name": "Nuvio",
+      "bundleIdentifier": "com.nuvio.media",
+      "developerName": "Nuvio Media",
+      "subtitle": "Built for every screen you watch on.",
+      "localizedDescription": "Nuvio — A free, open-source media app for your phone, your desktop, and the TV you already own. Bring your own sources. Nuvio turns them into a library with artwork, ratings, subtitles, and your place saved on every screen.",
+      "iconURL": "https://raw.githubusercontent.com/NuvioMedia/NuvioMobile/refs/heads/cmp-rewrite/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/app-icon-1024.png",
+      "tintColor": "#7B2FF7",
+      "category": "entertainment",
+      "screenshots": {
+        "iphone": [
+          "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/ef/83/cc/ef83cc2d-9bf9-a70a-6bdf-c2df20a27c1b/01-library-organized-1284x2778.png/1284x2788bb.webp",
+          "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/58/a8/1b/58a81be9-4f54-f1fa-1b27-70f1b7835e92/03-trakt-sync-1284x2778.png/1284x2788bb.webp",
+          "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/6c/a5/8c/6ca58c13-85cd-1590-3196-a72c8e4ed127/02-resume-progress-1284x2778.png/1284x2788bb.webp"
+        ],
+        "ipad": [
+          {
+            "imageURL": "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/ec/53/a7/ec53a782-c952-fddb-8b5e-8ea53f73013d/nuvio-ipad-01-home.png/2752x2064bb.webp",
+            "width": 2064,
+            "height": 2752
+          },
+          {
+            "imageURL": "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/85/1a/79/851a79c0-a557-92d3-99ab-255281d4c990/03-person-credits-master-2752x2064.png/2752x2064bb.webp",
+            "width": 2064,
+            "height": 2752
+          },
+          {
+            "imageURL": "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/eb/27/cb/eb27cb0c-310b-23e4-f937-9cf6bd9b8a79/01-search-catalogs-master-2752x2064.png/2752x2064bb.webp",
+            "width": 2064,
+            "height": 2752
+          },
+          {
+            "imageURL": "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/c6/5a/75/c65a75b0-301a-d4ee-4dd7-e98f8905ac6f/nuvio-ipad-02-search.png/2752x2064bb.webp",
+            "width": 2064,
+            "height": 2752
+          },
+          {
+            "imageURL": "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/a4/b6/12/a4b61250-09fc-eae4-e2af-0424b2909ecd/nuvio-ipad-03-details.png/2752x2064bb.webp",
+            "width": 2064,
+            "height": 2752
+          }
+        ]
+      },
+      "versions": [
+        {
+          "version": "0.4.11",
+          "buildVersion": "115",
+          "date": "2026-08-26T09:40:00Z",
+          "localizedDescription": "Bug Fixes and Improvements\nFor full release notes visit GitHub",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.11/nuvio-0.4.11-full-release.ipa",
+          "size": 51638510,
+          "sha256": "712e32aa5957c770a1e6769223769d1b56d0c9f957f369901190637f3cb49114",
+          "minOSVersion": "16.1"
+        }
+      ],
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {}
+      }
+    }
+  ],
+  "news": []
+}
