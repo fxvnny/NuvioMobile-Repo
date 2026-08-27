@@ -17,7 +17,7 @@
       "bundleIdentifier": "com.nuvio.media",
       "developerName": "Nuvio Media",
       "subtitle": "Built for every screen you watch on.",
-      "localizedDescription": "Nuvio — A free, open-source media app for your phone, your desktop, and the TV you already own. Bring your own sources. Nuvio turns them into a library with artwork, ratings, subtitles, and your place saved on every screen.",
+      "localizedDescription": "Nuvio — A free, open-source media app for your phone, your desktop, and the TV you already own. Bring your own sources. Nuvio turns them into a library with artwork, ratings, subtitles, and your place saved on every screen.\n\nNuvio requires iOS 16.1 or iPadOS 16.1 and newer.",
       "iconURL": "https://raw.githubusercontent.com/NuvioMedia/NuvioMobile/refs/heads/cmp-rewrite/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/app-icon-1024.png",
       "tintColor": "#7B2FF7",
       "category": "entertainment",
