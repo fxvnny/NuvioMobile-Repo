@@ -18,9 +18,13 @@
       "versions": [
         {
           "version": "0.4.11",
-          "buildVersion": "150",
-          "date": "2026-08-18T01:58:36Z",
+          "buildVersion": "115",
+          "date": "2026-08-26T09:40:00Z",
           "localizedDescription": "Bug Fixes and Improvements\nFor full release note Visit GitHub",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.11/nuvio-0.4.11-full-release.ipa",
+          "size": 51638510,
+          "sha256": "712e32aa5957c770a1e6769223769d1b56d0c9f957f369901190637f3cb49114",
+          "minOSVersion": "16.1"
         },
       ]
     }
