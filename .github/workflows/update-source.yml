@@ -2,8 +2,8 @@ name: Update AltStore Source
 
 on:
   schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch: {}      
+    - cron: '0 0 * * *'    # once a day, at midnight UTC — adjust the hour as you like
+  workflow_dispatch: {}      # lets you trigger it manually from the Actions tab
 
 permissions:
   contents: write
@@ -24,9 +24,9 @@ jobs:
         id: update
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_REPO: NuvioMedia/NuvioMobile      
-          SOURCE_FILE: NuvioiOS.json                 
-          BUNDLE_ID: com.nuvio.media                 
+          RELEASE_REPO: NuvioMedia/NuvioMobile      # repo whose Releases you're watching
+          SOURCE_FILE: NuvioiOS.json                 # file this workflow edits
+          BUNDLE_ID: com.nuvio.media                 # expected CFBundleIdentifier — mismatch just prints a warning
         run: |
           python3 - <<'PY'
           import hashlib
@@ -55,9 +55,10 @@ jobs:
               with urllib.request.urlopen(req, timeout=30) as r:
                   return json.load(r)
 
+          # 1. Find the latest release + its .ipa asset
           release = gh_get(f"https://api.github.com/repos/{repo}/releases/latest")
           tag = release["tag_name"].lstrip("v")
-          published = release["published_at"]
+          published = release["published_at"]  # ISO 8601
 
           ipa_asset = next(
               (a for a in release["assets"] if a["name"].lower().endswith(".ipa")),
@@ -68,8 +69,8 @@ jobs:
               sys.exit(0)
 
           download_url = ipa_asset["browser_download_url"]
-          notes = (release.get("body") or "See GitHub release notes.").strip()
 
+          # 2. Download the .ipa fully (needed for sha256 + Info.plist parsing)
           print(f"Downloading {download_url} ...")
           dl_req = urllib.request.Request(
               download_url,
@@ -82,6 +83,7 @@ jobs:
           sha256 = hashlib.sha256(ipa_bytes).hexdigest()
           print(f"Downloaded {size} bytes, sha256={sha256}")
 
+          # 3. Pull real metadata out of Payload/*.app/Info.plist
           version = tag
           build_version = None
           min_os_version = None
@@ -92,7 +94,7 @@ jobs:
                       (
                           n for n in z.namelist()
                           if n.startswith("Payload/") and n.endswith(".app/Info.plist")
-                          and n.count("/") == 2
+                          and n.count("/") == 2  # main app's Info.plist, not a nested framework/appex
                       ),
                       None,
                   )
@@ -112,6 +114,7 @@ jobs:
           except Exception as e:
               print(f"WARNING: Failed to parse Info.plist ({e}) - falling back to the GitHub release tag.")
 
+          # 4. Load the existing source file
           with open(source_file, "r", encoding="utf-8") as f:
               source = json.load(f)
 
@@ -130,25 +133,45 @@ jobs:
               "version": version,
               "buildVersion": build_version or "",
               "date": published,
-              "localizedDescription": notes[:1000],
+              # localizedDescription is intentionally NOT pulled from the GitHub
+              # release body — it carries forward whatever static text you've
+              # already set (same treatment as the app-level versionDescription),
+              # so edit it by hand in the source file if you want it to change.
+              "localizedDescription": (
+                  versions[0].get("localizedDescription", "")
+                  if versions
+                  else app.get("versionDescription", "")
+              ),
               "downloadURL": download_url,
               "size": size,
               "sha256": sha256,
           }
+          # Only set minOSVersion if we actually recovered one - never overwrite a
+          # good manual value with an empty string.
           if min_os_version:
               new_version["minOSVersion"] = min_os_version
           elif versions:
               new_version["minOSVersion"] = versions[0].get("minOSVersion", "")
 
+          # AltStore treats the FIRST entry in "versions" as the latest release
           versions.insert(0, new_version)
           app["versions"] = versions
 
+          # 5. Mirror the newest version into legacy flat fields on the app object.
+          # AltStore Classic and forks like Feather read these instead of (or in
+          # addition to) the "versions" array - without this, they show a stale
+          # version and no size badge even though "versions" is correct.
           app["version"] = new_version["version"]
-          app["versionDate"] = published[:10]
+          app["versionDate"] = published[:10]  # YYYY-MM-DD
+          # versionDescription is intentionally left untouched — not mirrored
           app["downloadURL"] = new_version["downloadURL"]
           app["size"] = new_version["size"]
           if "minOSVersion" in new_version:
               app["minOSVersion"] = new_version["minOSVersion"]
+
+          # NOTE: appPermissions / permissions are NOT touched here - entitlements
+          # and privacy-usage strings need a human to review against Info.plist,
+          # since a wrong auto-fill could make AltStore silently under-report them.
 
           with open(source_file, "w", encoding="utf-8") as f:
               json.dump(source, f, indent=2, ensure_ascii=False)
