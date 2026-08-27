@@ -2,8 +2,8 @@ name: Update AltStore Source
 
 on:
   schedule:
-    - cron: '0 */6 * * *'   # check every 6 hours — adjust as you like
-  workflow_dispatch: {}      # lets you trigger it manually from the Actions tab
+    - cron: '0 0 * * *'
+  workflow_dispatch: {}      
 
 permissions:
   contents: write
@@ -24,9 +24,9 @@ jobs:
         id: update
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_REPO: NuvioMedia/NuvioMobile      # repo whose Releases you're watching
-          SOURCE_FILE: NuvioiOS.json                 # file this workflow edits
-          BUNDLE_ID: com.nuvio.media                 # expected CFBundleIdentifier — mismatch just prints a warning
+          RELEASE_REPO: NuvioMedia/NuvioMobile      
+          SOURCE_FILE: NuvioiOS.json                 
+          BUNDLE_ID: com.nuvio.media                 
         run: |
           python3 - <<'PY'
           import hashlib
