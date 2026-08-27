@@ -55,7 +55,6 @@ jobs:
               with urllib.request.urlopen(req, timeout=30) as r:
                   return json.load(r)
 
-          # 1. Find the latest release + its .ipa asset
           release = gh_get(f"https://api.github.com/repos/{repo}/releases/latest")
           tag = release["tag_name"].lstrip("v")
           published = release["published_at"]  # ISO 8601
@@ -71,7 +70,6 @@ jobs:
           download_url = ipa_asset["browser_download_url"]
           notes = (release.get("body") or "See GitHub release notes.").strip()
 
-          # 2. Download the .ipa fully (needed for sha256 + Info.plist parsing)
           print(f"Downloading {download_url} ...")
           dl_req = urllib.request.Request(
               download_url,
@@ -84,7 +82,6 @@ jobs:
           sha256 = hashlib.sha256(ipa_bytes).hexdigest()
           print(f"Downloaded {size} bytes, sha256={sha256}")
 
-          # 3. Pull real metadata out of Payload/*.app/Info.plist
           version = tag
           build_version = None
           min_os_version = None
@@ -115,7 +112,6 @@ jobs:
           except Exception as e:
               print(f"WARNING: Failed to parse Info.plist ({e}) - falling back to the GitHub release tag.")
 
-          # 4. Load the existing source file
           with open(source_file, "r", encoding="utf-8") as f:
               source = json.load(f)
 
@@ -139,32 +135,20 @@ jobs:
               "size": size,
               "sha256": sha256,
           }
-          # Only set minOSVersion if we actually recovered one - never overwrite a
-          # good manual value with an empty string.
           if min_os_version:
               new_version["minOSVersion"] = min_os_version
           elif versions:
               new_version["minOSVersion"] = versions[0].get("minOSVersion", "")
 
-          # AltStore treats the FIRST entry in "versions" as the latest release
           versions.insert(0, new_version)
           app["versions"] = versions
 
-          # 5. Mirror the newest version into legacy flat fields on the app object.
-          # AltStore Classic and forks like Feather read these instead of (or in
-          # addition to) the "versions" array - without this, they show a stale
-          # version and no size badge even though "versions" is correct.
           app["version"] = new_version["version"]
           app["versionDate"] = published[:10]  # YYYY-MM-DD
-          # versionDescription is intentionally left untouched — not mirrored
           app["downloadURL"] = new_version["downloadURL"]
           app["size"] = new_version["size"]
           if "minOSVersion" in new_version:
               app["minOSVersion"] = new_version["minOSVersion"]
-
-          # NOTE: appPermissions / permissions are NOT touched here - entitlements
-          # and privacy-usage strings need a human to review against Info.plist,
-          # since a wrong auto-fill could make AltStore silently under-report them.
 
           with open(source_file, "w", encoding="utf-8") as f:
               json.dump(source, f, indent=2, ensure_ascii=False)
