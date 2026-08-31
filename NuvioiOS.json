@@ -7,7 +7,12 @@
   "iconURL": "https://raw.githubusercontent.com/NuvioMedia/NuvioMobile/refs/heads/cmp-rewrite/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/app-icon-1024.png",
   "headerURL": "https://raw.githubusercontent.com/NuvioMedia/NuvioMobile/refs/heads/cmp-rewrite/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/app-icon-1024.png",
   "tintColor": "#7B2FF7",
+  "sourceURL": "https://raw.githubusercontent.com/fxvnny/NuvioMobile-Repo/refs/heads/main/NuvioiOS.json",
   "nsfw": false,
+  "userInfo": {
+    "name": "Unofficial Source";
+    "role": "AltStore Updater"
+  },
   "featuredApps": [
     "com.nuvio.media"
   ],
