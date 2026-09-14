@@ -67,6 +67,16 @@
       ],
       "versions": [
         {
+          "version": "0.4.20",
+          "buildVersion": "125",
+          "date": "2026-09-14T08:44:41Z",
+          "localizedDescription": "Bug Fixes and Improvements\nFor full release notes visit GitHub",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.20/nuvio-0.4.20-full-release.ipa",
+          "size": 51167786,
+          "sha256": "5c48df020b647bd1d08f384278578a204002d37aa0a3a7a8025bab91ffa002d8",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.4.19",
           "buildVersion": "124",
           "date": "2026-09-13T19:40:06Z",
@@ -157,11 +167,11 @@
           "minOSVersion": "16.1"
         }
       ],
-      "version": "0.4.19",
-      "versionDate": "2026-09-13",
+      "version": "0.4.20",
+      "versionDate": "2026-09-14",
       "versionDescription": "Bug Fixes and Improvements\nFor full release notes visit GitHub",
-      "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.19/nuvio-0.4.19-full-release.ipa",
-      "size": 51091230,
+      "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.20/nuvio-0.4.20-full-release.ipa",
+      "size": 51167786,
       "minOSVersion": "16.1",
       "appPermissions": {
         "entitlements": [],
