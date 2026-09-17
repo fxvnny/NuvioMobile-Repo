@@ -67,7 +67,7 @@
       ],
       "versions": [
         {
-          "version": "0.4.22",
+          "version": "0.4.22-beta",
           "buildVersion": "127",
           "date": "2026-09-16T11:00:33Z",
           "localizedDescription": "Bug Fixes and Improvements\nFor full release notes visit GitHub",
@@ -187,7 +187,7 @@
           "minOSVersion": "16.1"
         }
       ],
-      "version": "0.4.22",
+      "version": "0.4.22-beta",
       "versionDate": "2026-09-16",
       "versionDescription": "Bug Fixes and Improvements\nFor full release notes visit GitHub",
       "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.22-beta/nuvio-0.4.22-full-release.ipa",
