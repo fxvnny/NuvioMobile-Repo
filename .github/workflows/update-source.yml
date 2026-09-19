@@ -1,9 +1,7 @@
 name: Update AltStore Source
 
 on:
-  schedule:
-    - cron: '0 0 * * *'    # once a day, at midnight UTC — adjust the hour as you like
-  workflow_dispatch: {}      # lets you trigger it manually from the Actions tab
+  workflow_dispatch: {}      # trigger manually from the Actions tab whenever you know there's a new release
 
 permissions:
   contents: write
@@ -34,8 +32,10 @@ jobs:
           import json
           import os
           import plistlib
+          import re
           import sys
           import urllib.request
+          import xml.etree.ElementTree as ET
           import zipfile
 
           repo = os.environ["RELEASE_REPO"]
@@ -54,6 +54,47 @@ jobs:
               )
               with urllib.request.urlopen(req, timeout=30) as r:
                   return json.load(r)
+
+          # 0. Load the existing source file first, so we know what's already recorded.
+          with open(source_file, "r", encoding="utf-8") as f:
+              source = json.load(f)
+          app = source["apps"][0]
+          versions = app.setdefault("versions", [])
+          current_top_version = versions[0]["version"] if versions else None
+
+          # 0b. Cheap gate check via the public Atom feed. This needs no auth, doesn't
+          # count against the GitHub API rate limit, and is a tiny payload compared to
+          # the REST API + .ipa download — so on every run where nothing changed, this
+          # is the only network call made. Note this doesn't make the workflow "push
+          # triggered" (Actions schedules can only run on a timer, GitHub can't wake
+          # one via feed updates) — it just makes each scheduled poll cheap.
+          atom_url = f"https://github.com/{repo}/releases.atom"
+          atom_req = urllib.request.Request(atom_url, headers={"User-Agent": "altstore-source-updater"})
+          with urllib.request.urlopen(atom_req, timeout=30) as r:
+              atom_xml = r.read()
+
+          ns = {"atom": "http://www.w3.org/2005/Atom"}
+          root = ET.fromstring(atom_xml)
+          latest_entry = root.find("atom:entry", ns)
+          latest_tag = None
+          if latest_entry is not None:
+              link_el = latest_entry.find("atom:link", ns)
+              href = link_el.get("href") if link_el is not None else ""
+              m = re.search(r"/releases/tag/([^/]+)$", href)
+              if m:
+                  latest_tag = m.group(1)
+
+          if latest_tag is None:
+              print("WARNING: Could not parse the Atom feed - falling back to the REST API check.")
+          elif current_top_version is not None and (
+              latest_tag == current_top_version
+              or latest_tag == current_top_version.removesuffix("-beta")
+          ):
+              print(f"Atom feed's newest tag ({latest_tag}) matches what's already recorded "
+                    f"({current_top_version}) - skipping the REST API and download entirely.")
+              sys.exit(0)
+          else:
+              print(f"Atom feed shows '{latest_tag}' vs recorded '{current_top_version}' - checking further.")
 
           # 1. List recent releases (NOT /releases/latest — that endpoint always
           # skips pre-releases, and NuvioMedia's -beta tags are marked as such,
@@ -142,13 +183,7 @@ jobs:
           base_version = base_version[:-5] if base_version.endswith("-beta") else base_version
           version = f"{base_version}-beta" if is_prerelease else base_version
 
-          # 4. Load the existing source file
-          with open(source_file, "r", encoding="utf-8") as f:
-              source = json.load(f)
-
-          app = source["apps"][0]
-          versions = app.setdefault("versions", [])
-
+          # 4. app/versions were already loaded in step 0 above.
           already_present = any(
               v.get("version") == version and v.get("buildVersion") == build_version
               for v in versions
