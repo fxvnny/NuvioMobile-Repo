@@ -67,7 +67,7 @@
       ],
       "versions": [
         {
-          "version": "0.4.23",
+          "version": "0.4.23-beta",
           "buildVersion": "128",
           "date": "2026-09-17T09:40:44Z",
           "localizedDescription": "Bug Fixes and Improvements\nFor full release notes visit GitHub",
