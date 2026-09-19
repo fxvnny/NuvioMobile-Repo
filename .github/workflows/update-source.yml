@@ -1,6 +1,8 @@
 name: Update AltStore Source
 
 on:
+  schedule:
+    - cron: '0 0 * * *'    # once a day, at midnight UTC — adjust the hour as you like
   workflow_dispatch: {}      # lets you trigger it manually from the Actions tab
 
 permissions:
@@ -53,18 +55,36 @@ jobs:
               with urllib.request.urlopen(req, timeout=30) as r:
                   return json.load(r)
 
-          # 1. Find the latest release + its .ipa asset
-          release = gh_get(f"https://api.github.com/repos/{repo}/releases/latest")
+          # 1. List recent releases (NOT /releases/latest — that endpoint always
+          # skips pre-releases, and NuvioMedia's -beta tags are marked as such,
+          # so it would silently keep returning an old stable version forever).
+          # Walk newest-to-oldest and use the first one that actually ships an
+          # .ipa asset, since some beta tags are published without one.
+          releases = gh_get(f"https://api.github.com/repos/{repo}/releases?per_page=10")
+
+          release = None
+          ipa_asset = None
+          for candidate in releases:
+              asset = next(
+                  (a for a in candidate["assets"] if a["name"].lower().endswith(".ipa")),
+                  None,
+              )
+              if asset:
+                  release = candidate
+                  ipa_asset = asset
+                  break
+
+          if not release:
+              print("No release in the last 10 has an .ipa asset — nothing to do.")
+              sys.exit(0)
+
+          # Keep the tag exactly as published (e.g. "0.4.23-beta") so the beta
+          # channel stays visible in the version string, rather than trusting
+          # Info.plist's CFBundleShortVersionString, which won't carry "-beta".
           tag = release["tag_name"].lstrip("v")
           published = release["published_at"]  # ISO 8601
-
-          ipa_asset = next(
-              (a for a in release["assets"] if a["name"].lower().endswith(".ipa")),
-              None,
-          )
-          if not ipa_asset:
-              print("No .ipa asset found on the latest release — nothing to do.")
-              sys.exit(0)
+          is_prerelease = release.get("prerelease", False)
+          print(f"Using release {tag} (prerelease={is_prerelease})")
 
           download_url = ipa_asset["browser_download_url"]
 
@@ -81,8 +101,8 @@ jobs:
           sha256 = hashlib.sha256(ipa_bytes).hexdigest()
           print(f"Downloaded {size} bytes, sha256={sha256}")
 
-          # 3. Pull real metadata out of Payload/*.app/Info.plist
-          version = tag
+          # 3. Pull build/minOS/plist-version metadata out of Payload/*.app/Info.plist.
+          plist_version = None
           build_version = None
           min_os_version = None
           plist_name = None
@@ -99,7 +119,7 @@ jobs:
                   if plist_name:
                       with z.open(plist_name) as f:
                           plist = plistlib.load(f)
-                      version = str(plist.get("CFBundleShortVersionString", tag))
+                      plist_version = str(plist.get("CFBundleShortVersionString", ""))
                       build_version = str(plist.get("CFBundleVersion", ""))
                       min_os_version = str(plist.get("MinimumOSVersion", ""))
                       bundle_id = plist.get("CFBundleIdentifier", "")
@@ -108,9 +128,19 @@ jobs:
                                 f"BUNDLE_ID '{expected_bundle_id}' - check for a mismatch.")
                   else:
                       print("WARNING: Could not find the main app's Info.plist inside the .ipa - "
-                            "falling back to the GitHub release tag for version info.")
+                            "build/minOS info will be missing for this version.")
           except Exception as e:
-              print(f"WARNING: Failed to parse Info.plist ({e}) - falling back to the GitHub release tag.")
+              print(f"WARNING: Failed to parse Info.plist ({e}) - build/minOS info will be missing.")
+
+          # Build the version string: prefer the plist's CFBundleShortVersionString
+          # as the base (it's the authoritative app version), falling back to the
+          # tag with any "-beta" suffix stripped if the plist wasn't readable.
+          # Then append "-beta" ourselves based on GitHub's real "prerelease" flag
+          # -- this doesn't depend on NuvioMedia's tag-naming convention staying
+          # consistent, since we're checking the actual signal, not parsing text.
+          base_version = plist_version or (tag[:-5] if tag.endswith("-beta") else tag)
+          base_version = base_version[:-5] if base_version.endswith("-beta") else base_version
+          version = f"{base_version}-beta" if is_prerelease else base_version
 
           # 4. Load the existing source file
           with open(source_file, "r", encoding="utf-8") as f:
